@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Short King Archive | Birthday Edition</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400..700&family=Quicksand:wght@300..700&family=Bungee&display=swap" rel="stylesheet">
+    
+    <style>
+        /* Mobile polish */
+* { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+
+body { 
+    font-family: 'Quicksand', sans-serif; 
+    background-color: #f3f4f6; 
+    margin: 0; 
+    overflow: hidden;
+    position: fixed;
+    width: 100%;
+    height: 100%;
+}
+
+h1, h2, h3, h4, .font-bungee { font-family: 'Bungee', cursive; }
+.font-handwriting { font-family: 'Dancing Script', cursive; }
+
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: #000; }
+::-webkit-scrollbar-thumb { background: #fff; border: 2px solid black; }
+
+/* Faster marquee */
+@keyframes marquee { 
+    0% { transform: translateX(0); } 
+    100% { transform: translateX(-50%); } 
+}
+.animate-marquee { animation: marquee 10s linear infinite; }
+
+/* Scoped Shake */
+@keyframes scoped-shake {
+    0%,100% { transform: translateX(0); }
+    25% { transform: translateX(-6px) rotate(-0.5deg); }
+    75% { transform: translateX(6px) rotate(0.5deg); }
+}
+.shake-card { animation: scoped-shake 0.1s ease-in-out infinite; }
+
+/* Final Fade */
+.final-fade-screen {
+    position: fixed;
+    inset: 0;
+    background: black;
+    z-index: 9999;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 3s ease-in-out;
+}
+.fade-active { opacity: 1; pointer-events: auto; }</style>
+
+    <script type="importmap">
+    {
+      "imports": {
+        "framer-motion": "https://esm.sh/framer-motion@^12.34.1",
+        "lucide-react": "https://esm.sh/lucide-react@^0.574.0",
+        "react-dom/client": "https://esm.sh/react-dom@^19.2.4/client",
+        "react": "https://esm.sh/react@^19.2.4",
+        "@google/genai": "https://esm.sh/@google/genai@^1.41.0",
+        "canvas-confetti": "https://esm.sh/canvas-confetti@^1.9.4",
+        "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
+        "react/": "https://esm.sh/react@^19.2.4/"
+      }
+    }
+    </script>
+
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel" data-type="module">
+        import React, { useState, useEffect, useRef } from 'react';
+        import ReactDOM from 'react-dom/client';
+        import { motion, AnimatePresence } from 'framer-motion';
+        import { 
+          Swords, Star, Heart, Sparkles, Volume2, VolumeX, 
+          X, ArrowRight, ChevronLeft, Zap, PackageOpen, 
+          Utensils, Wind, Play, Mail, Trophy as TrophyIcon
+        } from 'lucide-react';
+        import confetti from 'canvas-confetti';
+
+        // --- DATA ---
+        const CHILDHOOD_DECK = [
+          { id: 'c1', title: "The OG Giant", image: "s1.jpg" },
+          { id: 'c2', title: "Wait for it", image: "s2.jpg" },
+          { id: 'c3', title: "Wars", image: "s3.png" },
+          { id: 'c4', title: "Editorrr", image: "s4.png" },
+          { id: 'c5', title: "Sabka chaheeta", image: "s5.png" },
+          { id: 'c6', title: "The Levelin", image: "s6.jpg" }
+        ];
+
+        const MEMORIES = [
+          { id: 'm1', title: "Gamesss", image: "m1.jpg" },
+          { id: 'm2', title: "The Fam", image: "m2.jpg" },
+          { id: 'm3', title: "hmmmm", image: "m3.jpg" },
+          { id: 'm4', title: "Compact Legend", image: "m4.jpg" }
+        ];
+
+        const STICKERS = ['💖', '✨', '🍓', '🍰', '🐶', '🚀', '🦒', '💎', '🎮', '🌈', '🍦', '🧸', '⚡', '🌟', '🍩', '🍬', '🍭'];
+        const THEMES = {
+          candy: { bg: '#FFF5F8', accent: '#FF85A2', text: '#5D2E46' },
+          mint: { bg: '#F2FFF9', accent: '#6EE7B7', text: '#064E3B' },
+          business: { bg: '#F8FAFC', accent: '#64748B', text: '#1E293B' }
+        };
+
+        // --- COMPONENTS ---
+        const Stat = ({ label, value }) => (
+          <div className="mb-4 w-full">
+            <div className="text-xs font-bold font-bungee uppercase mb-1 text-white">{label}</div>
+            <div className="w-full bg-gray-700 h-3 rounded-full overflow-hidden border-2 border-black">
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: `${value}%` }}
+                transition={{ duration: 1, delay: 0.2 }}
+                className="h-full bg-yellow-400"
+              />
+            </div>
+          </div>
+        );
+
+        // --- APP ---
+        const App = () => {
+          // Upgrade 3: Pre-Workout Loader
+          const [loading, setLoading] = useState(true);
+          const [showFinalStats, setShowFinalStats] = useState(false);
+          const [hasOpened, setHasOpened] = useState(false);
+          const [currentPage, setCurrentPage] = useState('intro');
+          const [theme, setTheme] = useState('candy');
+          const [isPlaying, setIsPlaying] = useState(false);
+          const [swipedCount, setSwipedCount] = useState(0);
+          const [childhoodCards, setChildhoodCards] = useState(CHILDHOOD_DECK);
+          const [particles, setParticles] = useState([]);
+          const [activeGame, setActiveGame] = useState(null);
+          const [reflexState, setReflexState] = useState('idle');
+          const [reflexTime, setReflexTime] = useState(null);
+          const [fallingCakes, setFallingCakes] = useState([]);
+          const [cakesCaught, setCakesCaught] = useState(0);
+          const [fallingBalloons, setFallingBalloons] = useState([]);
+          const [balloonsPopped, setBalloonsPopped] = useState(0);
+          const [isJumping, setIsJumping] = useState(false);
+          const [jumpScore, setJumpScore] = useState(0);
+          const [obstacleX, setObstacleX] = useState(110);
+          const [isGameOver, setIsGameOver] = useState(false);
+          const [memoryCards, setMemoryCards] = useState([]);
+          const [flippedIds, setFlippedIds] = useState([]);
+          const [cakeStep, setCakeStep] = useState(0);
+          const [armPower, setArmPower] = useState(100);
+          const [showSike, setShowSike] = useState(false);
+          const [sikeCount, setSikeCount] = useState(0);
+          const [resistance, setResistance] = useState(1.5);
+          const [armWrestleState, setArmWrestleState] = useState('playing');
+          const SIKE_MESSAGES = [
+  "SIKE!",
+  "ALELELE",
+  "maan ja",
+  "nahi hoga\nmaan jao",
+  "bade jiddi ho",
+  "are nahi hoga\nbhaiya ji",
+  "fir wahi baat",
+  "are are\npagal hai kya",
+  "bas ab aur\nnahi likh paunga",
+  "sahi me pagal\ngogya hai chhodo"
+];
+          const [activeFinalCard, setActiveFinalCard] = useState(null);
+          const [victoryTime, setVictoryTime] = useState(null);
+          const [isShaking, setIsShaking] = useState(false);
+          const [interstitial, setInterstitial] = useState(null);
+          const [isEnding, setIsEnding] = useState(false);
+          
+          // Upgrade 6: Future Tracker
+          const [clickedFinalCards, setClickedFinalCards] = useState([]);
+          
+          const audioRef = useRef(null);
+          const reflexStartRef = useRef(0);
+          const reflexTimeoutRef = useRef(null);
+          const armStartTimeRef = useRef(null);
+
+          const isHeightExceeded = swipedCount >= 5;
+          const myHeightRaw = isHeightExceeded ? 320 : 80 + ((swipedCount / 6) * 120); 
+
+          useEffect(() => {
+            const timer = setTimeout(() => { setLoading(false); }, 2500);
+            return () => clearTimeout(timer);
+          }, []);
+
+          useEffect(() => {
+            const mm = (e) => {
+              if (!hasOpened) return;
+              const np = { id: Math.random(), x: e.clientX, y: e.clientY, emoji: STICKERS[Math.floor(Math.random() * STICKERS.length)] };
+              setParticles(p => [...p.slice(-8), np]);
+            };
+            window.addEventListener('mousemove', mm);
+            return () => window.removeEventListener('mousemove', mm);
+          }, [hasOpened]);
+
+          useEffect(() => {
+            if (activeGame === 'cake') {
+  const i = setInterval(() => {
+    setFallingCakes(prev => {
+      const updated = prev
+        .map(c => ({ ...c, y: c.y + 3.2 })) // slightly faster fall
+        .filter(c => c.y < 110);
+
+      // Higher spawn rate
+      if (Math.random() > 0.75) {
+        updated.push({
+          id: Math.random(),
+          x: Math.random() * 80 + 10,
+          y: -10
+        });
+
+        // Occasionally spawn a second one
+        if (Math.random() > 0.7) {
+          updated.push({
+            id: Math.random(),
+            x: Math.random() * 80 + 10,
+            y: -10
+          });
+        }
+      }
+
+      return updated;
+    });
+  }, 50);
+
+  return () => clearInterval(i);
+}
+            if (activeGame === 'balloon') {
+  const i = setInterval(() => {
+    setFallingBalloons(prev => {
+      const updated = prev
+        .map(b => ({ ...b, y: b.y + 2.8 })) // slightly faster
+        .filter(b => b.y < 110);
+
+      if (Math.random() > 0.72) {
+        updated.push({
+          id: Math.random(),
+          x: Math.random() * 80 + 10,
+          y: -10,
+          color: `hsl(${Math.random() * 360}, 70%, 70%)`,
+          isPopping: false
+        });
+
+        // Bonus burst chance
+        if (Math.random() > 0.8) {
+          updated.push({
+            id: Math.random(),
+            x: Math.random() * 80 + 10,
+            y: -10,
+            color: `hsl(${Math.random() * 360}, 70%, 70%)`,
+            isPopping: false
+          });
+        }
+      }
+
+      return updated;
+    });
+  }, 50);
+
+  return () => clearInterval(i);
+}
+            if (activeGame === 'jump' && !isGameOver) {
+              const i = setInterval(() => {
+                setObstacleX(p => {
+                  if (p <= -10) { setJumpScore(s => s + 1); return 110; }
+                  if (p > 15 && p < 25 && !isJumping) { setIsGameOver(true); return p; }
+                  return p - 2.5;
+                });
+              }, 40);
+              return () => clearInterval(i);
+            }
+          }, [activeGame, isJumping, isGameOver]);
+
+          const initMemory = () => {
+            const icons = ['🍓', '🍰', '🐶', '🦒', '💎', '🎮', '🌈', '🍦'];
+            const doubled = [...icons, ...icons].sort(() => Math.random() - 0.5).map((icon, idx) => ({ id: idx, icon, flipped: false, matched: false }));
+            setMemoryCards(doubled);
+            setFlippedIds([]);
+          };
+          
+          useEffect(() => { if (activeGame === 'memory' && memoryCards.length === 0) initMemory(); }, [activeGame]);
+
+          const startReflex = () => {
+            setReflexState('waiting'); setReflexTime(null);
+            if (reflexTimeoutRef.current) clearTimeout(reflexTimeoutRef.current);
+            reflexTimeoutRef.current = setTimeout(() => { setReflexState('ready'); reflexStartRef.current = Date.now(); }, 1200 + Math.random() * 2000);
+          };
+
+          const clickReflex = () => {
+            if (reflexState === 'waiting') { if (reflexTimeoutRef.current) clearTimeout(reflexTimeoutRef.current); setReflexState('idle'); return; }
+            if (reflexState === 'ready') { setReflexTime(Date.now() - reflexStartRef.current); setReflexState('finished'); confetti({ particleCount: 20 }); }
+          };
+
+          const catchCake = (id) => { setFallingCakes(p => p.filter(c => c.id !== id)); setCakesCaught(s => s + 1); confetti({ particleCount: 10, origin: { y: 0.8 } }); };
+          const popBalloon = (id) => { setFallingBalloons(p => p.map(b => b.id === id ? { ...b, isPopping: true } : b)); setBalloonsPopped(s => s + 1); setTimeout(() => setFallingBalloons(p => p.filter(b => b.id !== id)), 150); };
+
+          useEffect(() => {
+            if (armWrestleState === 'playing' && armPower < 100 && !showSike) {
+              const i = setInterval(() => setArmPower(p => Math.min(100, p + (0.5 * resistance))), 50);
+              return () => clearInterval(i);
+            }
+          }, [armPower, armWrestleState, resistance]);
+
+          const pages = ['intro', 'archive', 'memories', 'cake', 'arcade', 'titanium', 'virtual-gift', 'finale'];
+          
+          // Fix 1: Safe Navigation
+          const next = () => {
+            const index = pages.indexOf(currentPage);
+            if (index < pages.length - 1) {
+              setCurrentPage(pages[index + 1]);
+            }
+          };
+
+          const prev = () => {
+            const index = pages.indexOf(currentPage);
+            if (index > 0) {
+              setCurrentPage(pages[index - 1]);
+            }
+          };
+
+          // Loader Screen
+          if (loading) {
+            return (
+              <div className="fixed inset-0 bg-black text-white flex flex-col items-center justify-center z-[999]">
+                <h2 className="text-3xl font-black font-bungee mb-6 uppercase italic animate-pulse">
+                  Drinking 20rs wala ganne ka juice...
+                </h2>
+                <div className="w-64 h-3 bg-gray-800 rounded-full overflow-hidden border-2 border-gray-600">
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: "100%" }}
+                    transition={{ duration: 2.5 }}
+                    className="h-full bg-red-500 shadow-[0_0_15px_rgba(239,68,68,0.8)]"
+                  />
+                </div>
+              </div>
+            );
+          }
+
+          return (
+            <div className="fixed inset-0 overflow-hidden font-sans select-none transition-all duration-700" style={{ backgroundColor: THEMES[theme].bg, color: THEMES[theme].text }}>
+              <AnimatePresence>
+
+  {/* 🔥 INTERSTITIAL OVERLAYS (ADD THIS FIRST) */}
+  {interstitial === 'defeat' && (
+    <motion.div
+      key="defeat-overlay"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[1000] bg-black flex flex-col items-center justify-center p-6 text-center"
+    >
+      <img
+  src="./defeat.gif"
+  className="rounded-[2.5rem] border-4 border-white mb-6 w-full max-w-sm shadow-2xl"
+/>
+      <h2 className="text-white font-bungee text-xl animate-pulse">
+        TOTALLY NOT RIGGED...  apne pyare bhai ke sath cheating thodi kar sakta hu 🥰
+      </h2>
+    </motion.div>
+  )}
+
+  {interstitial === 'gift' && (
+  <motion.div
+    key="gift-overlay"
+    initial={{ scale: 0, rotate: -15, opacity: 0 }}
+    animate={{ scale: 1.1, rotate: 5, opacity: 1 }}
+    exit={{ scale: 2, opacity: 0 }}
+    transition={{ type: "spring", stiffness: 220, damping: 12 }}
+    onAnimationStart={() => {
+      confetti({
+        particleCount: 250,
+        spread: 140,
+        origin: { y: 0.6 }
+      });
+    }}
+    className="fixed inset-0 z-[1000] bg-pink-500 flex flex-col items-center justify-center overflow-hidden"
+  >
+
+    {/* White Flash */}
+    <motion.div
+      className="absolute inset-0 bg-white"
+      initial={{ opacity: 1 }}
+      animate={{ opacity: 0 }}
+      transition={{ duration: 0.35 }}
+    />
+
+    {/* Expanding Blast Ring */}
+    <motion.div
+      className="absolute w-72 h-72 rounded-full border-4 border-white"
+      initial={{ scale: 0, opacity: 1 }}
+      animate={{ scale: 3, opacity: 0 }}
+      transition={{ duration: 0.8 }}
+    />
+
+    {/* Sparkle Burst */}
+    <motion.div
+      className="absolute w-72 h-72"
+      initial={{ scale: 0 }}
+      animate={{ scale: 1.4 }}
+      transition={{ duration: 0.6 }}
+    >
+      <div className="absolute top-0 left-1/2 w-1 h-12 bg-white -translate-x-1/2" />
+      <div className="absolute bottom-0 left-1/2 w-1 h-12 bg-white -translate-x-1/2" />
+      <div className="absolute left-0 top-1/2 h-1 w-12 bg-white -translate-y-1/2" />
+      <div className="absolute right-0 top-1/2 h-1 w-12 bg-white -translate-y-1/2" />
+    </motion.div>
+
+    {/* Bouncing Gift */}
+    <motion.div
+      animate={{ y: [0, -35, 0], rotate: [0, -15, 15, 0] }}
+      transition={{ repeat: Infinity, duration: 0.6 }}
+      className="relative z-10"
+    >
+      <PackageOpen size={130} className="text-white drop-shadow-xl" />
+    </motion.div>
+
+    <h2 className="text-white font-bungee text-3xl mt-8 relative z-10">
+      UNBOXING...
+    </h2>
+
+  </motion.div>
+)}
+
+  {/* 🔐 YOUR EXISTING LOCK SCREEN */}
+  {!hasOpened && (
+    <motion.div
+      key="intro-lock"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ scale: 2, opacity: 0 }}
+      className="fixed inset-0 z-[200] bg-black/60 backdrop-blur-xl flex items-center justify-center p-8"
+    >
+      <motion.div
+  whileHover={{ scale: 1.05 }}
+  onClick={() => {
+  setHasOpened(true);
+  confetti({ particleCount: 100 });
+
+  if (audioRef.current) {
+    audioRef.current.volume = 0;
+    audioRef.current.play();
+    setIsPlaying(true);
+
+    let volume = 0;
+    const fadeIn = setInterval(() => {
+      if (volume < 0.98) {
+        volume += 0.01;   // 0.02 * 250 steps ≈ 5 sec
+        audioRef.current.volume = volume;
+      } else {
+        audioRef.current.volume = 1;
+        clearInterval(fadeIn);
+      }
+    }, 100);
+  }
+}}
+  className="bg-white p-14 rounded-[3rem] border-8 border-black shadow-[20px_20px_0px_0px_rgba(255,133,162,1)] cursor-pointer text-center max-w-4xl w-full relative flex flex-col md:flex-row items-center gap-10"
+>
+
+  {/* LEFT TEXT */}
+  <div className="flex-1 text-center md:text-left">
+    <h2 className="text-4xl md:text-5xl font-black font-bungee uppercase italic mb-6">
+      UNLOCK ARCHIVE
+    </h2>
+
+    <p className="text-lg font-bold italic text-gray-600 mb-8 font-quicksand">
+      Tap to access Compact King files.
+    </p>
+
+    <Mail className="text-pink-500 animate-pulse" size={60} />
+  </div>
+
+  {/* RIGHT MEME */}
+  <div className="w-40 md:w-56">
+    <img
+      src="peak entry.gif"
+      className="rounded-2xl border-4 border-black w-full object-cover"
+    />
+  </div>
+
+</motion.div>
+    </motion.div>
+  )}
+
+</AnimatePresence>
+
+              <AnimatePresence>{particles.map(p => <motion.div key={p.id} initial={{ opacity: 1, scale: 0.5, x: p.x, y: p.y }} animate={{ opacity: 0, scale: 1.5, y: p.y - 120 }} transition={{ duration: 1.5 }} className="fixed pointer-events-none z-[100] text-xl">{p.emoji}</motion.div>)}</AnimatePresence>
+
+              <header className="fixed top-0 left-0 right-0 h-16 border-b-4 border-black z-50 flex items-center justify-between px-6 bg-white/90 backdrop-blur-md">
+                <div className="flex items-center gap-4">
+                  <div className="flex gap-1">{(Object.keys(THEMES)).map(t => <button key={t} onClick={() => setTheme(t)} className={`w-5 h-5 rounded-full border-2 border-black ${theme === t ? 'scale-110 ring-1 ring-black' : 'opacity-40'}`} style={{ backgroundColor: THEMES[t].accent }} />)}</div>
+                  {currentPage !== 'intro' && hasOpened && <button onClick={prev} className="font-black uppercase text-[10px] tracking-widest font-bungee flex items-center gap-1 hover:text-pink-500 transition-colors"><ChevronLeft size={14}/> BACK</button>}
+                </div>
+                <button onClick={() => { if (!audioRef.current) return; isPlaying ? audioRef.current.pause() : audioRef.current.play(); setIsPlaying(!isPlaying); }} className="bg-white p-1.5 border-2 border-black rounded-lg shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:shadow-none translate-y-0 active:translate-y-1">{isPlaying ? <Volume2 size={18} className="text-pink-500"/> : <VolumeX size={18} className="opacity-40"/>}</button>
+              </header>
+
+              <main className="absolute inset-0 flex flex-col items-center pt-24 pb-24 px-6 overflow-y-auto">
+                <AnimatePresence mode="wait">
+                  {hasOpened && currentPage === 'intro' && (
+                    <motion.section key="intro" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} exit={{ x: -100, opacity: 0 }} className="flex flex-col items-center text-center w-full max-w-6xl">
+                      <div className="p-2 bg-yellow-300 border-2 border-black mb-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] font-bungee uppercase italic text-[10px] tracking-widest">from your favouuritee smol sibling</div>
+                      <h1 className="text-7xl md:text-[10rem] font-black uppercase italic leading-none text-black font-bungee drop-shadow-lg mb-10 w-full text-center">HAPPY <br/> <span className="text-pink-500">BIRTHDAY</span></h1>
+                      <button onClick={next} className="group flex items-center gap-4 bg-black text-white px-10 py-5 rounded-full font-black text-2xl uppercase border-2 border-black shadow-[10px_10px_0px_0px_rgba(255,133,162,1)] active:scale-95 font-bungee transition-all">START TOUR <ArrowRight className="group-hover:translate-x-2 transition-transform"/></button>
+                    </motion.section>
+                  )}
+
+                  {hasOpened && currentPage === 'archive' && (
+                    <motion.section key="archive" initial={{ opacity: 0, x: 100 }} animate={{ opacity: 1, x: 0 }} className="flex flex-col lg:flex-row items-center gap-12 w-full justify-center">
+                       <div
+  className={`relative ${
+    childhoodCards.length === 0 && !showFinalStats
+      ? "w-[90vw] max-w-[600px] aspect-[963/595]"
+      : "w-80 h-[450px]"
+  }`}
+>
+
+  <AnimatePresence>
+    {childhoodCards.length > 0 && childhoodCards.map((c, i) => (
+      <motion.div
+        key={c.id}
+        onClick={() => {
+          setChildhoodCards(p => p.filter(x => x.id !== c.id));
+          setSwipedCount(s => s + 1);
+          confetti({ particleCount: 20 });
+        }}
+        initial={{ scale: 0.8, opacity: 0, rotate: i * 3 }}
+        animate={{ scale: 1, opacity: 1, rotate: i * 3 }}
+        exit={{
+          x: 800,
+          rotate: i * 8,
+          opacity: 0,
+          transition: { duration: 0.4 }
+        }}
+        style={{ zIndex: childhoodCards.length - i }}
+        className="absolute inset-0 cursor-pointer"
+      >
+        <div className="p-5 border-4 border-black h-full rounded-[3rem] bg-white shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] flex flex-col overflow-hidden">
+          <div className="flex-grow overflow-hidden border-2 border-black rounded-[2rem] mb-4">
+            <img
+              src={c.image}
+              className="w-full h-full object-cover pointer-events-none"
+            />
+          </div>
+          <h3 className="text-xl font-black font-bungee italic text-center tracking-tight">
+            {c.title}
+          </h3>
+        </div>
+      </motion.div>
+    ))}
+
+    {/* FINAL WIDE MEME FIRST */}
+    {childhoodCards.length === 0 && !showFinalStats && (
+  <motion.div
+    key="final-meme"
+    initial={{ opacity: 0, scale: 0.8 }}
+    animate={{ opacity: 1, scale: 1 }}
+    transition={{ duration: 0.5 }}
+    onClick={() => setShowFinalStats(true)}
+    className="w-full h-full bg-white border-4 border-black rounded-[3rem]
+               shadow-[15px_15px_0px_0px_rgba(0,0,0,1)]
+               overflow-hidden cursor-pointer"
+  >
+    <img
+      src="final-meme.jpg"
+      className="w-full h-full object-cover"
+    />
+  </motion.div>
+)}
+)}
+
+  </AnimatePresence>
+
+  {/* BRO STATS AFTER MEME */}
+  {childhoodCards.length === 0 && showFinalStats && (
+    <motion.div
+      initial={{ scale: 0 }}
+      animate={{ scale: 1 }}
+      className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-6 bg-white/90 backdrop-blur-sm rounded-[3rem] p-6"
+    >
+      <div className="bg-black text-white p-6 rounded-[2rem] border-4 border-pink-500 w-full max-w-[250px] shadow-[10px_10px_0px_0px_rgba(0,0,0,1)] flex flex-col items-center">
+        <h3 className="font-bungee text-xl mb-4 italic text-pink-400">BRO STATS</h3>
+        <Stat label="Strength" value={94} />
+        <Stat label="Discipline" value={88} />
+        <Stat label="Humor" value={100} />
+        <Stat label="Aura" value={99} />
+      </div>
+      <button
+        onClick={next}
+        className="bg-pink-500 text-white px-8 py-3 rounded-full font-black font-bungee text-xl uppercase border-4 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:scale-105 active:scale-95 transition-all"
+      >
+        CONTINUE
+      </button>
+    </motion.div>
+  )}
+
+</div>
+                       <div className="flex flex-col items-center">
+                          <div className="mb-4 text-center">
+                            <h4 className="font-bungee text-sm italic uppercase text-pink-600 tracking-widest">SMOL POWER SCALE</h4>
+                          </div>
+                          <div className="bg-white p-8 border-4 border-black rounded-[3rem] shadow-[10px_10px_0px_0px_rgba(0,0,0,1)] w-72 h-[340px] flex flex-col items-center justify-end overflow-visible">
+                            <div className="flex items-end gap-8 h-56 border-b-2 border-black pb-3 px-6 w-full relative">
+                              <div className="flex flex-col items-center w-full"><div className="w-12 bg-pink-400 border-2 border-black rounded-t-xl" style={{ height: 160 }}></div><span className="text-[10px] font-black font-bungee mt-2 uppercase">BICEPS</span></div>
+                              <div className="flex flex-col items-center w-full"><motion.div className="w-12 border-2 border-black rounded-t-xl bg-cyan-400 origin-bottom" animate={{ height: myHeightRaw }} /><span className="text-[10px] font-black font-bungee mt-2 uppercase">SMOL ONE</span></div>
+                              {isHeightExceeded && <div className="absolute -top-24 -right-20 bg-red-600 text-white p-4 text-[10px] font-black rounded-2xl rotate-12 animate-pulse border-4 border-black font-bungee leading-tight shadow-2xl z-20">ROOF BROKEN<br/>       !!!!!!!</div>}
+                            </div>
+                          </div>
+                          <p className="text-[30px] font-black text-pink-600 mt-6 uppercase italic font-bungee">Height Graph</p>
+                       </div>
+                    </motion.section>
+                  )}
+
+                  {hasOpened && currentPage === 'memories' && (
+                    <motion.section key="memories" className="w-full max-w-5xl flex flex-col items-center">
+                       <h2 className="text-5xl font-black font-bungee text-center mb-10 italic text-cyan-500 tracking-tighter">THE COLLECTION (hover to color)</h2>
+                       <div className="grid grid-cols-2 gap-6 w-full">{MEMORIES.map((m) => (<motion.div key={m.id} whileHover={{ scale: 1.02 }} className="aspect-video bg-white border-4 border-black rounded-[2.5rem] shadow-[10px_10px_0px_0px_rgba(0,0,0,1)] overflow-hidden"><img src={m.image} className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-700" /></motion.div>))}</div>
+                       <button onClick={next} className="mt-12 bg-black text-white px-12 py-5 rounded-full font-black font-bungee text-2xl shadow-[8px_8px_0px_0px_rgba(255,133,162,1)] active:translate-y-1 transition-all">NEXT PAGE</button>
+                    </motion.section>
+                  )}
+
+                  {hasOpened && currentPage === 'cake' && (
+                    <motion.section key="cake" className="bg-white p-14 border-[10px] border-black rounded-[4rem] shadow-[20px_20px_0px_0px_rgba(0,0,0,1)] max-w-lg w-full text-center">
+                       <h2 className="text-3xl font-black font-bungee mb-8 italic text-pink-500 underline underline-offset-4 decoration-4 decoration-black">Cake Khao</h2>
+                       <div className="relative w-full h-72 flex items-center justify-center mb-10 bg-pink-50/50 rounded-[3rem] border-4 border-dashed border-pink-100">
+                          <motion.div key={cakeStep} initial={{ scale: 0, rotate: -15 }} animate={{ scale: 1, rotate: 0 }} className="text-[10rem] drop-shadow-2xl">{['🍽️', '🥣', '🍰', '🎂', '💨', '😋'][cakeStep]}</motion.div>
+                       </div>
+                       <button onClick={() => cakeStep < 5 ? setCakeStep(s => s + 1) : next()} className="bg-black text-white px-10 py-5 rounded-full font-black font-bungee text-2xl uppercase w-full shadow-lg hover:bg-pink-500 transition-colors">{['Get Bowl', 'Mix Batter', 'Frost It', 'Light Candles', 'Make Wish', 'tasty tha na'][cakeStep]}</button>
+                    </motion.section>
+                  )}
+
+                  {hasOpened && currentPage === 'arcade' && (
+                    <motion.section key="arcade" className="w-full max-w-5xl flex flex-col items-center">
+                       <h2 className="text-5xl font-black font-bungee italic mb-12 text-yellow-500 tracking-tight">THE BRO-CADE</h2>
+                       <div className="grid grid-cols-2 md:grid-cols-5 gap-5 w-full">
+                          {[ { id: 'reflex', title: 'Reflex', icon: <Zap size={24}/>, c: 'bg-yellow-100' }, { id: 'cake', title: 'Catch', icon: <Utensils size={24}/>, c: 'bg-pink-100' }, { id: 'balloon', title: 'Pop', icon: <Wind size={24}/>, c: 'bg-sky-100' }, { id: 'jump', title: 'Jump', icon: <Play size={24}/>, c: 'bg-orange-100' }, { id: 'memory', title: 'Memory', icon: <Star size={24}/>, c: 'bg-indigo-100' } ].map((g) => (
+                            <motion.div key={g.id} whileHover={{ scale: 1.05, rotate: 2 }} onClick={() => setActiveGame(g.id)} className={`${g.c} p-8 border-4 border-black rounded-[2.5rem] shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] flex flex-col items-center justify-center cursor-pointer group`}>
+                               <div className="text-black mb-3 group-hover:scale-125 transition-transform">{g.icon}</div>
+                               <h3 className="text-[12px] font-black font-bungee uppercase text-center leading-none">{g.title}</h3>
+                            </motion.div>
+                          ))}
+                       </div>
+                       <button onClick={next} className="mt-14 bg-red-600 text-white px-14 py-6 rounded-full font-black font-bungee text-3xl uppercase border-4 border-black shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] hover:bg-red-500 transition-all tracking-tighter">TITANIUM MENACE</button>
+                       <AnimatePresence>
+                         {activeGame && (
+                           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[150] bg-black/80 backdrop-blur-md flex items-center justify-center p-6">
+                             {/* Fix 2: Arcade Modal strict height (h-[600px]) so internal games stretch perfectly */}
+                             <motion.div initial={{ scale: 0.8 }} animate={{ scale: 1 }} className="bg-white border-[10px] border-black rounded-[4rem] w-full max-w-3xl h-[600px] overflow-hidden relative p-10 flex flex-col items-center justify-center shadow-2xl">
+                                <button onClick={() => { setActiveGame(null); setReflexState('idle'); setIsGameOver(false); }} className="absolute top-6 right-6 p-3 bg-black text-white rounded-full hover:scale-110 transition-transform"><X size={24}/></button>
+                                {activeGame === 'reflex' && (<div className="text-center w-full"><h2 className="text-3xl font-black font-bungee mb-8">SNAP REFLEX</h2><div onClick={clickReflex} className={`w-full h-56 border-8 border-black rounded-[3rem] flex items-center justify-center cursor-pointer transition-colors ${reflexState === 'ready' ? 'bg-green-500' : 'bg-gray-100'}`}><span className="font-black font-bungee text-5xl">{reflexState === 'idle' ? 'START' : reflexState === 'waiting' ? 'WAIT...' : reflexState === 'ready' ? 'SNAP!' : `${reflexTime}ms`}</span></div>{reflexState === 'idle' && <button onClick={(e) => { e.stopPropagation(); startReflex(); }} className="mt-6 bg-black text-white px-10 py-3 rounded-full font-black font-bungee text-xl">GO</button>}</div>)}
+                                {activeGame === 'cake' && (<div className="w-full h-full flex flex-col"><h2 className="text-3xl font-black font-bungee mb-4">CATCH IT</h2><p className="mb-6 font-bold font-quicksand text-gray-500">Score: {cakesCaught}</p><div className="flex-grow bg-pink-50 border-8 border-black rounded-[3rem] relative overflow-hidden">{fallingCakes.map(c => (<motion.button key={c.id} onClick={(e) => { e.stopPropagation(); catchCake(c.id); }} className="absolute text-7xl pointer-events-auto" style={{ left: `${c.x}%`, top: `${c.y}%`, transform: 'translate(-50%, -50%)' }}>🍰</motion.button>))}</div></div>)}
+                                {activeGame === 'balloon' && (<div className="w-full h-full flex flex-col"><h2 className="text-3xl font-black font-bungee mb-4">POP FALL</h2><p className="mb-6 font-bold font-quicksand text-gray-500">Total: {balloonsPopped}</p><div className="flex-grow bg-sky-50 border-8 border-black rounded-[3rem] relative overflow-hidden">{fallingBalloons.map(b => (<motion.button key={b.id} onClick={(e) => { e.stopPropagation(); popBalloon(b.id); }} className="absolute text-7xl pointer-events-auto" style={{ left: `${b.x}%`, top: `${b.y}%`, color: b.color, transform: 'translate(-50%, -50%)' }}>{b.isPopping ? '💥' : '🎈'}</motion.button>))}</div></div>)}
+                                {activeGame === 'jump' && (<div className="w-full h-full flex flex-col"><h2 className="text-3xl font-black font-bungee mb-4">SHORT JUMP</h2><p className="mb-6 font-bold font-quicksand text-gray-500">Score: {jumpScore}</p><div onClick={() => !isGameOver && !isJumping && (setIsJumping(true), setTimeout(() => setIsJumping(false), 600))} className="flex-grow bg-orange-50 border-8 border-black rounded-[3rem] relative overflow-hidden cursor-pointer"><motion.div animate={{ y: isJumping ? -140 : 0 }} transition={{ type: 'spring' }} className="absolute bottom-8 left-14 text-7xl">🏃‍♂️</motion.div><div className="absolute bottom-8 text-6xl" style={{ left: `${obstacleX}%` }}>🌵</div>{isGameOver && <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center text-white"><h3 className="text-5xl font-black font-bungee mb-8">GAME OVER</h3><button onClick={(e) => { e.stopPropagation(); setIsGameOver(false); setJumpScore(0); setObstacleX(110); }} className="bg-white text-black px-12 py-4 rounded-full font-black font-bungee text-2xl">RETRY</button></div>}</div></div>)}
+                                {activeGame === 'memory' && (<div className="w-full h-full flex flex-col"><h2 className="text-3xl font-black font-bungee mb-6">MATCHING</h2><div className="grid grid-cols-4 gap-3 flex-grow bg-indigo-50 p-6 border-8 border-black rounded-[3rem]">{memoryCards.map((c) => (<button key={c.id} onClick={() => { if (flippedIds.length === 2 || c.matched || c.flipped) return; const u = memoryCards.map(x => x.id === c.id ? { ...x, flipped: true } : x); setMemoryCards(u); const f = [...flippedIds, c.id]; setFlippedIds(f); if (f.length === 2) { const [f1, f2] = f; if (memoryCards.find(x => x.id === f1).icon === u.find(x => x.id === f2).icon) { setMemoryCards(prev => prev.map(x => (x.id === f1 || x.id === f2) ? { ...x, matched: true } : x)); setFlippedIds([]); } else { setTimeout(() => { setMemoryCards(prev => prev.map(x => (x.id === f1 || x.id === f2) ? { ...x, flipped: false } : x)); setFlippedIds([]); }, 700); } } }} className={`border-4 border-black rounded-[2rem] flex items-center justify-center text-3xl transition-all aspect-square shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] ${c.flipped || c.matched ? 'bg-white' : 'bg-gray-800 text-gray-800'}`}>{c.flipped || c.matched ? c.icon : '?'}</button>))}</div></div>)}
+                             </motion.div>
+                           </motion.div>
+                         )}
+                       </AnimatePresence>
+                    </motion.section>
+                  )}
+
+                  {hasOpened && currentPage === 'titanium' && (
+                    <motion.section key="titanium" className="w-full max-w-3xl text-center">
+                       <AnimatePresence mode="wait">
+                         {armWrestleState === 'playing' ? (
+                           <motion.div key="playing" className={`bg-red-600 text-white p-12 border-[10px] border-black rounded-[4rem] shadow-[25px_25px_0px_0px_rgba(0,0,0,1)] relative overflow-hidden ${isShaking ? 'shake-card' : ''}`}>
+                            {showSike && (
+  <motion.div
+    initial={{ scale: 0.5, opacity: 0 }}
+    animate={{ scale: 1.2, opacity: 1 }}
+    exit={{ opacity: 0 }}
+    className="absolute inset-0 z-30 flex items-center justify-center bg-black/85 text-center px-6"
+  >
+    <div className="text-white font-bungee text-5xl md:text-7xl leading-tight whitespace-pre-line">
+      {SIKE_MESSAGES[sikeCount % SIKE_MESSAGES.length]}
+    </div>
+  </motion.div>
+)} 
+                            <Swords size={70} className="mx-auto mb-6 text-white animate-pulse" />
+                              <h2 className="text-4xl font-black font-bungee uppercase italic mb-4 tracking-tighter">THE DUEL</h2>
+                              <p className="text-base font-bold italic font-quicksand opacity-90 leading-tight mb-8 px-8">"honge bicep wicep, mai bhi titanium wire hu - thin but strongest"</p>
+                              <div className="w-full h-10 bg-black/40 border-4 border-white rounded-full overflow-hidden mb-8 relative shadow-inner">
+                                 <motion.div animate={{ width: `${armPower}%` }} className="h-full bg-yellow-400 shadow-[0_0_20px_rgba(255,255,0,0.5)]" />
+                              </div>
+                              <div className="mb-10 flex flex-col items-center">
+                                 <h3 className="text-2xl font-black font-bungee mb-1 text-yellow-300 italic tracking-tighter">idhar thodi hara loge laadleeeee</h3>
+                                 <p className="text-sm font-bold uppercase mb-4 font-quicksand opacity-80">""</p>
+                                 <motion.div animate={{ x: [-2, 2, -2], rotate: [-0.3, 0.3, -0.3] }} transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }} className="text-white text-5xl font-black italic tracking-tighter shadow-2xl uppercase font-bungee">cheetah hi kehde</motion.div>
+                              </div>
+                              <div className="flex flex-col gap-8 items-center">
+                                {/* Upgrade 5: Screen Shake on PULL */}
+                                <button onClick={() => {
+  if (!armStartTimeRef.current) {
+    armStartTimeRef.current = Date.now();
+  }
+
+  setIsShaking(true);
+
+  setArmPower(prev => {
+    const newPower = prev - 6;
+if (sikeCount >= 9) {
+  setArmPower(100);
+  return 100;
+}
+    if (newPower <= 50 && !showSike) {
+
+      setShowSike(true);
+      setSikeCount(prev => prev + 1);
+
+      setTimeout(() => {
+        setShowSike(false);
+        setArmPower(100);
+      }, 2000);
+
+      return 50;
+    }
+
+    return newPower;
+  });
+
+  setTimeout(() => setIsShaking(false), 120);
+}} className="bg-white text-red-600 px-20 py-8 font-black font-bungee uppercase text-4xl rounded-full border-8 border-black shadow-[10px_10px_0px_0px_rgba(0,0,0,1)] active:translate-y-4 transition-transform hover:scale-105">PULL BUTTON</button>
+                                
+                                <motion.button animate={{ scale: [1, 1.04, 1] }} transition={{ repeat: Infinity, duration: 1.8 }} onClick={()=>{
+  setInterstitial('defeat');
+  setTimeout(()=>{
+    setInterstitial(null);
+    setArmWrestleState('conceded');
+    confetti({particleCount:150});
+  },6000);
+}} className="bg-black text-white px-16 py-7 font-black font-bungee uppercase text-2xl rounded-[2rem] border-4 border-white shadow-2xl hover:bg-gray-900 transition-all flex flex-col items-center leading-none">
+                                  <span className="text-sm mb-1 opacity-50">BROTHER YIELDS</span>
+                                  <span>ACCEPT DEFEAT</span>
+                                </motion.button>
+                              </div>
+                           </motion.div>
+                         ) : (
+                           <motion.div
+  key="result"
+  className="bg-black text-white p-16 border-[15px] border-yellow-500 rounded-[4rem] shadow-[30px_30px_0px_0px_rgba(255,215,0,0.1)] flex flex-col items-center"
+>
+
+  <img
+    src="menace-win.gif"
+    className="w-64 rounded-2xl border-4 border-white mb-10"
+  />
+
+  <h2 className="text-6xl font-black font-bungee uppercase italic mb-8 tracking-tighter">
+    SMOL ONE WINS
+  </h2>
+
+  <p className="text-3xl font-bold font-bungee leading-relaxed max-w-xl mx-auto italic mb-12">
+    TITANIUM WIRE IS UNBREAKABLE.
+  </p>
+
+  <button
+    onClick={()=>{
+      setInterstitial('gift');
+      setTimeout(()=>{
+        setInterstitial(null);
+        next();
+      },2500);
+    }}
+    className="bg-yellow-400 text-black px-16 py-6 rounded-full font-black font-bungee uppercase text-2xl border-6 border-white hover:scale-110 transition-all shadow-2xl"
+  >
+    GIFT LELO GIFT
+  </button>
+
+</motion.div>
+                         )}
+                       </AnimatePresence>
+                    </motion.section>
+                  )}
+
+                  {hasOpened && currentPage === 'virtual-gift' && (
+                    <motion.section key="gift" className="bg-white border-4 border-dashed border-gray-300 p-12 rounded-[4rem] shadow-2xl max-w-2xl w-full flex flex-col items-center">
+                       <h2 className="font-handwriting text-5xl text-pink-800 mb-6 italic">A Virtual Gift</h2>
+                       <p className="text-gray-500 text-sm font-bold mb-10 italic text-center font-quicksand leading-tight px-12 uppercase tracking-wide">since i cant buy a cake or a present since im smol and with no moni, heres a gift from you favourite smol bro</p>
+                       <div className="bg-[#FFFCEB] border-4 border-yellow-200 p-6 md:p-8 rounded-[2rem] w-full shadow-inner">
+
+  <div className="flex flex-col md:flex-row items-center gap-6">
+
+    {/* LEFT SIDE */}
+    <ul className="space-y-4 text-base md:text-lg font-black text-gray-700 font-quicksand flex-1 text-center md:text-left">
+
+      <li className="flex justify-center md:justify-start items-center gap-3">
+        🍀 1x year of good luck
+      </li>
+
+      <li className="flex justify-center md:justify-start items-center gap-3">
+        🎂 1x zero calorie cake
+      </li>
+
+      <li className="flex justify-center md:justify-start items-center gap-3">
+        💪 1x virtual protein crate
+      </li>
+
+      <li className="flex justify-center md:justify-start items-center gap-3">
+        🔥 1x elite gym PR
+      </li>
+
+    </ul>
+
+    {/* RIGHT SIDE IMAGE */}
+    <div className="w-32 md:w-48 flex-shrink-0">
+      <img
+        src="meme.jpg"
+        className="rounded-xl border-4 border-black w-full h-auto object-cover"
+      />
+    </div>
+
+  </div>
+
+</div>
+                       <button onClick={()=>{
+  setInterstitial('gift');
+  setTimeout(()=>{
+    setInterstitial(null);
+    next();
+  },2000);
+}} className="mt-12 bg-pink-500 text-white px-12 py-5 rounded-full font-black font-bungee text-2xl uppercase shadow-2xl hover:bg-pink-600 transition-all flex items-center gap-3">FINALE <PackageOpen/></button>
+                    </motion.section>
+                  )}
+
+                  {hasOpened && currentPage === 'finale' && (
+                    <motion.section key="finale" className="w-full max-w-6xl text-center pb-40">
+                       <Heart className="text-pink-500 mx-auto mb-10 animate-pulse" size={120} fill="currentColor" />
+                       <h1 className="text-7xl md:text-[10rem] font-black font-bungee uppercase italic mb-16 text-black leading-none w-full text-center">HAPPY <br/> <span className="text-pink-500">BIRTHDAY</span></h1>
+                       <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 mb-12 px-8">
+                          {[ { id: 0, title: "COMPACT KING \n(click to flip)", icon: "🌟" }, { id: 1, title: "COLLEGE", icon: "🎓" }, { id: 2, title: "WISHES", icon: "💖" }, { id: 3, title: "BHAICHARAA", icon: "🫂" } ].map((c) => (
+                            <motion.div key={c.id} whileHover={{ y: -15, scale: 1.05 }} onClick={() => { 
+                                setActiveFinalCard(c.id); 
+                                if (!clickedFinalCards.includes(c.id)) setClickedFinalCards(prev => [...prev, c.id]); 
+                              }} 
+                              className="bg-white p-8 border-4 border-black rounded-[3rem] shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] cursor-pointer flex flex-col items-center group transition-all">
+                               <div className="text-6xl mb-6 group-hover:rotate-12 transition-transform">{c.icon}</div>
+                               <h4 className="font-black font-bungee uppercase text-[10px] text-center leading-tight tracking-widest">{c.title}</h4>
+                            </motion.div>
+                          ))}
+                       </div>
+
+                       {/* Upgrade 6: Future Projection */}
+                       <AnimatePresence>
+                         {clickedFinalCards.length === 4 && activeFinalCard === null && (
+                           <motion.div 
+                             initial={{ opacity: 0, y: 50 }} 
+                             animate={{ opacity: 1, y: 0 }} 
+                             className="mt-6 mb-24 bg-black text-white p-8 border-4 border-yellow-400 rounded-[3rem] inline-block shadow-[15px_15px_0px_0px_rgba(250,204,21,1)]"
+                           >
+                             <h3 className="text-4xl font-black font-bungee mb-6 text-yellow-400 italic underline decoration-4 underline-offset-4">PROJECTED STATS: 2027</h3>
+                             <div className="text-xl font-bold font-bungee uppercase text-left space-y-3 leading-loose">
+                               <p>💪 Status: <span className="text-pink-400">Absolutely Jacked</span></p>
+                               <p>🧠 Discipline: <span className="text-cyan-400">Unbreakable</span></p>
+                               <p>✨ Aura: <span className="text-yellow-400">Ascended</span></p>
+                             </div>
+                           </motion.div>
+                         )}
+                       </AnimatePresence>
+
+                       <AnimatePresence>
+                         {activeFinalCard !== null && (
+                           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-2xl flex items-center justify-center p-8">
+                              <motion.div initial={{ scale: 0.8 }} animate={{ scale: 1 }} className="bg-white border-[10px] border-black p-14 rounded-[4rem] max-w-3xl relative shadow-[50px_50px_0px_0px_rgba(255,133,162,0.4)]">
+                                 <button onClick={() => setActiveFinalCard(null)} className="absolute top-8 right-8 p-4 bg-black text-white rounded-full hover:scale-125 transition-transform"><X size={24}/></button>
+                                 <p className="text-3xl font-black font-quicksand leading-tight text-black italic">
+                                    {[ 
+                                      "You might be a short king, but your personality and drive are literally above the roof. Bestest brother ever.", 
+                                      "You'll be leaving for college soon. The room and clothes will be mine now, but I'll miss our laughs.", 
+                                      "Happy Birthday Legend. May your dreams be fulfilled and you achieve everything you've ever ever evverr wanted", 
+                                      "Truly grateful for everything. especially health habits. you taught me everything you never had anyone for." 
+                                    ][activeFinalCard]}
+                                 </p>
+                              </motion.div>
+                           </motion.div>
+                         )}
+                       </AnimatePresence>
+                       <div className="mt-12 space-y-4">
+  <p className="font-bungee text-pink-500 animate-bounce">
+    A FINAL MESSAGE...
+  </p>
+
+  <button
+    onClick={() => {
+  setIsEnding(true);
+
+  if (audioRef.current) {
+    let volume = audioRef.current.volume;
+
+    const fadeOut = setInterval(() => {
+      if (volume > 0.02) {
+        volume -= 0.02;
+        audioRef.current.volume = volume;
+      } else {
+        audioRef.current.volume = 0;
+        audioRef.current.pause();
+        clearInterval(fadeOut);
+      }
+    }, 100);  // 5 seconds total
+  }
+}}
+    className="bg-black text-white px-10 py-5 rounded-full font-bungee text-xl">
+    CLOSE ARCHIVE
+  </button>
+</div>
+                    </motion.section>
+                  )}
+                </AnimatePresence>
+              </main>
+
+              <footer className="fixed bottom-0 left-0 right-0 bg-black text-white h-14 flex items-center overflow-hidden z-50 border-t-4 border-pink-500">
+                <div className="flex whitespace-nowrap animate-marquee gap-20">
+                  {[...Array(4)].map((_, i) => (
+                    <span key={i} className="font-black font-bungee text-[11px] uppercase tracking-[0.3em] italic flex items-center gap-12">
+                      <Star size={16} className="text-yellow-400" fill="currentColor" /> 
+                      TALL ENERGY • GOAT • COMPACT KING • GIFT FROM THE SMOL ONE • 
+                      <Heart size={16} className="text-pink-500" fill="currentColor" />
+                    </span>
+                  ))}
+                </div>
+                <div className={`final-fade-screen flex flex-col items-center justify-center ${isEnding ? 'fade-active' : ''}`}>
+  <Heart className="text-pink-500 mb-6" size={80} fill="currentColor"/>
+  <h1 className="text-white font-bungee text-2xl">
+    Happy Birthday GOAT. Thank you mere sath rehne aur sambhalne ke liye.
+  </h1>
+</div>
+              </footer>
+              <audio ref={audioRef} src="hbd.mp3" loop />
+            </div>
+          );
+        };
+
+        const rootElement = document.getElementById('root');
+        const root = ReactDOM.createRoot(rootElement);
+        root.render(<App />);
+    </script>
+</body>
+</html>
