@@ -186,7 +186,7 @@ h1, h2, h3, h4, .font-bungee { font-family: 'Bungee', cursive; }
   "fir wahi baat",
   "are are\npagal hai kya",
   "bas ab aur\nnahi likh paunga",
-  "sahi me pagal\ngogya hai chhodo"
+  "sahi me pagal\nhogya hai chhodo"
 ];
           const [activeFinalCard, setActiveFinalCard] = useState(null);
           const [victoryTime, setVictoryTime] = useState(null);
@@ -853,7 +853,7 @@ if (sikeCount >= 9) {
                        <Heart className="text-pink-500 mx-auto mb-10 animate-pulse" size={120} fill="currentColor" />
                        <h1 className="text-7xl md:text-[10rem] font-black font-bungee uppercase italic mb-16 text-black leading-none w-full text-center">HAPPY <br/> <span className="text-pink-500">BIRTHDAY</span></h1>
                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 mb-12 px-8">
-                          {[ { id: 0, title: "COMPACT KING \n(click to flip)", icon: "🌟" }, { id: 1, title: "COLLEGE", icon: "🎓" }, { id: 2, title: "WISHES", icon: "💖" }, { id: 3, title: "BHAICHARAA", icon: "🫂" } ].map((c) => (
+                          {[ { id: 0, title: "COMPACT KING/n(click to flip)", icon: "🌟" }, { id: 1, title: "COLLEGE", icon: "🎓" }, { id: 2, title: "WISHES", icon: "💖" }, { id: 3, title: "BHAICHARAA", icon: "🫂" } ].map((c) => (
                             <motion.div key={c.id} whileHover={{ y: -15, scale: 1.05 }} onClick={() => { 
                                 setActiveFinalCard(c.id); 
                                 if (!clickedFinalCards.includes(c.id)) setClickedFinalCards(prev => [...prev, c.id]); 
@@ -893,7 +893,7 @@ if (sikeCount >= 9) {
                                       "You might be a short king, but your personality and drive are literally above the roof. Bestest brother ever.", 
                                       "You'll be leaving for college soon. The room and clothes will be mine now, but I'll miss our laughs.", 
                                       "Happy Birthday Legend. May your dreams be fulfilled and you achieve everything you've ever ever evverr wanted", 
-                                      "Truly grateful for everything. especially health habits. you taught me everything you never had anyone for." 
+                                      "love you bhaiya even if i never say it irl. you taught me everything you never had anyone for. truly grateful." 
                                     ][activeFinalCard]}
                                  </p>
                               </motion.div>
@@ -961,6 +961,7 @@ if (sikeCount >= 9) {
     </script>
 </body>
 </html>
+
 
 
 
