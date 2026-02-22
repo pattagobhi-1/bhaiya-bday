@@ -853,7 +853,7 @@ if (sikeCount >= 9) {
                        <Heart className="text-pink-500 mx-auto mb-10 animate-pulse" size={120} fill="currentColor" />
                        <h1 className="text-7xl md:text-[10rem] font-black font-bungee uppercase italic mb-16 text-black leading-none w-full text-center">HAPPY <br/> <span className="text-pink-500">BIRTHDAY</span></h1>
                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 mb-12 px-8">
-                          {[ { id: 0, title: "COMPACT KING/n(click to flip)", icon: "🌟" }, { id: 1, title: "COLLEGE", icon: "🎓" }, { id: 2, title: "WISHES", icon: "💖" }, { id: 3, title: "BHAICHARAA", icon: "🫂" } ].map((c) => (
+                          {[ { id: 0, title: "COMPACT KING\n(click to flip)", icon: "🌟" }, { id: 1, title: "COLLEGE", icon: "🎓" }, { id: 2, title: "WISHES", icon: "💖" }, { id: 3, title: "BHAICHARAA", icon: "🫂" } ].map((c) => (
                             <motion.div key={c.id} whileHover={{ y: -15, scale: 1.05 }} onClick={() => { 
                                 setActiveFinalCard(c.id); 
                                 if (!clickedFinalCards.includes(c.id)) setClickedFinalCards(prev => [...prev, c.id]); 
@@ -961,6 +961,7 @@ if (sikeCount >= 9) {
     </script>
 </body>
 </html>
+
 
 
 
